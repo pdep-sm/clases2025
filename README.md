@@ -1,7 +1,2 @@
-# ejercicio-alumno
+# Clases en branches : 2025
 
-## Integrantes
-
-- integrante1 (usuario github)
-- integrante2 (usuario github)
-...
