@@ -1,38 +1,128 @@
 module Library where
+
 import PdePreludat
 
-limiteVelocidad = 60
+------------------ 12.04.2025 ------------------
 
--- esExceso:: Int -> Bool
-esExceso velocidad = velocidad > limiteVelocidad
+-- Data (record syntax)
+
+data Jugador = Jugador {
+    nombre :: String,
+    goles :: Goles,
+    asistencias :: Asistencias,
+    suspendido :: Suspendido
+} deriving (Show)
+
+type Nombre = String
+type Goles = Number
+type Asistencias = Number
+type Suspendido = Bool
+
+{-
+
+type Jugador = (Nombre, Goles, Asistencias, Suspendido)
+
+tom :: Jugador
+tom = ("Tom", 15, 6, True)
+
+goles (_ , g , _ , _) = g
+
+-}
+
+tom = Jugador "Tom" 15 6 True -- sin record syntax
+
+nico = Jugador {
+    nombre = "Nico",
+    goles = 16,
+    asistencias = 10,
+    suspendido = False
+} -- con record syntax
 
 
-valorMulta velocidad
-  | esExceso velocidad = (velocidad - limiteVelocidad) * 10000
-  | otherwise = 0
+-- hizoGoles gs (n, g, a, s) = (n, g + gs, a, s) {- opción fea -}
 
-puntosDeDescuento valor 
-  | valor > 150000 = 10
-  | valor > 100000 = 5
-  | otherwise = 0
+hizoGoles :: Goles -> Jugador -> Jugador
+hizoGoles gs jug = jug {goles = goles jug + gs} {- opción más mantenible y expresiva -}
 
-puntosPorVelocidad velocidad = (puntosDeDescuento . valorMulta)  velocidad
-puntosPorVelocidad' = puntosDeDescuento . valorMulta
+-- asistio as (n, g, a, s) = (n, g, a + as, s) {- opción fea -}
 
--- primera definición de par
-esPar n = mod n 2 == 0
--- convertimos al mod en infijo para pensar en separar el parámetro n
-esPar' n = n `mod` 2 == 0
--- aplicamos parcialmente la igualdad (0==) y `mod` 2, y los componemos dejando el n afuera
-esPar'' n = ((0==) . (`mod` 2)) n 
--- por último cambiamos la notación para que quede como simplemente una equivalencia
-esPar''' = (0==) . (`mod` 2)
+asistio :: Asistencias -> Jugador -> Jugador
+asistio as jug = jug {asistencias = asistencias jug + as} {- opción más mantenible y expresiva -}
+
+-- fueExpulsado exp (n, g, a, _) = (n, g, a, exp) {- opción fea -}
+
+fueExpulsado :: Suspendido -> Jugador -> Jugador
+fueExpulsado exp jug = jug {suspendido = exp} {- opción más mantenible y expresiva -}
+
+-- (f . g) x = f (g x)
+
+type Partido = (Goles, Asistencias, Suspendido)
+
+-- jugoPartido (gs, as, exp) jugador = (fueExpulsado exp . asistio as . hizoGoles gs) jugador
+
+jugoPartido :: Partido -> Jugador -> Jugador
+jugoPartido (gs, as, exp) = fueExpulsado exp . asistio as . hizoGoles gs {- 'eta reduction' de lo anterior -}
 
 
--- Por una gran idea de un estudiante, hacemos una generalización
-esMultiploDe n m = mod m n == 0
+{-
 
--- Hacemos la versión de esPar haciendo una aplicación parcial de la función creada
-esPar'''' = esMultiploDe 2
+CONSOLA:
 
+> hizoGoles 4 (Jugador "Mati" 4 4 False)
+Jugador { 
+    nombre = "Mati", 
+    goles = 8, 
+    asistencias = 4, 
+    suspendido = False }
+
+-}
+
+------------------------------------------------
+
+{- [5] ≡ 5 : [] , son equivalentes -}
+
+-- head (x : _) = x
+-- tail (_ : xs) = xs
+
+{-
+CONSOLA: 
+
+> head [1, 2, 3]
+1
+
+> tail [1, 2, 3]
+[2, 3]
+
+-}
+
+{-
+CONSOLA: 
+
+> length [1, 2, 4]
+3
+
+> length []
+0
+
+> length [1..10]
+10
+
+> length [1..]
+* nunca termina *
+
+> take 10 [1..]
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+-}
+
+{-
+length :: [a] -> Number
+length [] = 0
+length (_ : xs) = 1 + length xs
+-}
+
+length' :: [a] -> Number
+length' lista
+    | null lista = 0
+    | otherwise = 1 + (length' . tail) lista
 
