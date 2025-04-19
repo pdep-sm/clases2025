@@ -1,128 +1,131 @@
 module Library where
-
 import PdePreludat
 
------------------- 12.04.2025 ------------------
+tom :: Jugador
+tom = Jugador "Tom" 15 6 True
 
--- Data (record syntax)
+fst' :: (a, b) -> a
+fst' (x, _) = x
+
+snd' :: (a, b) -> b
+snd' (_, y) = y
+
+head' :: [a] -> a
+head' (cabeza:cola) = cabeza
+
+f :: Number -> Number
+f 10 = 5
+f _ = 10
+
+g :: Number -> Number
+g n
+    | n == 10 = 5
+    | otherwise = 10
+
+length' :: [a] -> Number
+length' [] = 0
+length' (_:xs) = 1 + length' xs
+
+factorial :: Number -> Number
+factorial 0 = 1
+factorial n = n * factorial (n - 1)
+
+take' :: Number -> [a] -> [a]
+take' 0 _  = []
+take' _ [] = []
+take' n (x:xs) = x : take' (n-1) xs
+
+numerosDesde, numerosDesde' :: Number -> [Number]
+numerosDesde n = n : numerosDesde (n+1)
+numerosDesde' n = [n..]
 
 data Jugador = Jugador {
     nombre :: String,
-    goles :: Goles,
-    asistencias :: Asistencias,
-    suspendido :: Suspendido
-} deriving (Show)
+    goles :: Number,
+    asistencias :: Number,
+    suspendido :: Bool
+} deriving Show
 
-type Nombre = String
-type Goles = Number
-type Asistencias = Number
-type Suspendido = Bool
+type Equipo = [Jugador]
 
-{-
+-- Goles del equipo en conjunto
+totalGoles, totalGoles', totalGoles'' :: Equipo -> Number
+totalGoles   equipo = (goles . head) equipo + (totalGoles . tail) equipo
+totalGoles'  equipo = (sum . golesEquipo') equipo
+totalGoles''        = sum . golesEquipo'
 
-type Jugador = (Nombre, Goles, Asistencias, Suspendido)
+-- Asistencias del equipo en conjunto
+totalAsistencias :: Equipo -> Number
+totalAsistencias = sum . asistenciasEquipo'
 
-tom :: Jugador
-tom = ("Tom", 15, 6, True)
+-- Nuestra propia definición de map: Obtener la lista resultante de transformar cada elemento de otra lista
+map' :: (t -> a) -> [t] -> [a]
+map' funcion [] = []
+map' funcion (x : xs) = funcion x : map' funcion xs
 
-goles (_ , g , _ , _) = g
+-- Goles de cada jugador del equipo
+golesEquipo', golesEquipo'' :: Equipo -> [Number]
+golesEquipo'  equipo = map' goles equipo
+golesEquipo''        = map goles
 
+-- Asistencias de cada jugador del equipo
+asistenciasEquipo' :: Equipo -> [Number]
+asistenciasEquipo' = map asistencias
+
+-- Nombres de los jugadores
+plantel' :: Equipo -> [String]
+plantel' = map nombre
+
+-- Jugadores que hicieron goles
+goleadores, goleadores', goleadores'' :: Equipo -> [Jugador]
+goleadores   equipo = filter  hizoGoles      equipo
+goleadores'  equipo = filter  ((>0) . goles) equipo
+goleadores''        = filter' ((>0) . goles)
+
+hizoGoles :: Jugador -> Bool
+hizoGoles = (>0) . goles
+
+-- Nombres de los jugadores que hicieron goles
+plantelGoleador, plantelGoleador' :: Equipo -> [String]
+plantelGoleador  equipo = (plantel' . goleadores) equipo 
+plantelGoleador'        = plantel' . goleadores
+
+-- Nuestra propia definición de filter: ¿qué elementos de una lista cumplen una condición?
+filter' :: (a -> Bool) -> [a] -> [a]
+filter' _ [] = []
+filter' condicion (x:xs) 
+    | condicion x = x : filter' condicion xs
+    | otherwise   = filter' condicion xs
+
+-- Nombres de los jugadores que hicieron al menos 5 asistencias
+plantelAsistidor :: Equipo -> [String]
+plantelAsistidor = map nombre . filter ((>= 5) . asistencias) 
+-- any
+-- all
+
+-- ¿El equipo hizo goles?
+equipoHizoGoles, equipoHizoGoles' :: Equipo -> Bool
+equipoHizoGoles  equipo = any hizoGoles equipo
+equipoHizoGoles'        = any hizoGoles
+
+
+
+
+
+
+
+
+{- Las funciones que descartamos rápidamente por ser poco declarativas y duplicar código:
+
+golesEquipo :: Equipo -> [Number]
+golesEquipo [] = []
+golesEquipo (jugador : jugadores) = goles jugador : golesEquipo jugadores
+
+asistenciasEquipo :: Equipo -> [Number]
+asistenciasEquipo [] = []
+asistenciasEquipo (jugador : jugadores) = asistencias jugador : asistenciasEquipo jugadores
+
+plantel :: Equipo -> [String]
+plantel [] = []
+plantel (jugador : jugadores) = nombre jugador : plantel jugadores
 -}
-
-tom = Jugador "Tom" 15 6 True -- sin record syntax
-
-nico = Jugador {
-    nombre = "Nico",
-    goles = 16,
-    asistencias = 10,
-    suspendido = False
-} -- con record syntax
-
-
--- hizoGoles gs (n, g, a, s) = (n, g + gs, a, s) {- opción fea -}
-
-hizoGoles :: Goles -> Jugador -> Jugador
-hizoGoles gs jug = jug {goles = goles jug + gs} {- opción más mantenible y expresiva -}
-
--- asistio as (n, g, a, s) = (n, g, a + as, s) {- opción fea -}
-
-asistio :: Asistencias -> Jugador -> Jugador
-asistio as jug = jug {asistencias = asistencias jug + as} {- opción más mantenible y expresiva -}
-
--- fueExpulsado exp (n, g, a, _) = (n, g, a, exp) {- opción fea -}
-
-fueExpulsado :: Suspendido -> Jugador -> Jugador
-fueExpulsado exp jug = jug {suspendido = exp} {- opción más mantenible y expresiva -}
-
--- (f . g) x = f (g x)
-
-type Partido = (Goles, Asistencias, Suspendido)
-
--- jugoPartido (gs, as, exp) jugador = (fueExpulsado exp . asistio as . hizoGoles gs) jugador
-
-jugoPartido :: Partido -> Jugador -> Jugador
-jugoPartido (gs, as, exp) = fueExpulsado exp . asistio as . hizoGoles gs {- 'eta reduction' de lo anterior -}
-
-
-{-
-
-CONSOLA:
-
-> hizoGoles 4 (Jugador "Mati" 4 4 False)
-Jugador { 
-    nombre = "Mati", 
-    goles = 8, 
-    asistencias = 4, 
-    suspendido = False }
-
--}
-
-------------------------------------------------
-
-{- [5] ≡ 5 : [] , son equivalentes -}
-
--- head (x : _) = x
--- tail (_ : xs) = xs
-
-{-
-CONSOLA: 
-
-> head [1, 2, 3]
-1
-
-> tail [1, 2, 3]
-[2, 3]
-
--}
-
-{-
-CONSOLA: 
-
-> length [1, 2, 4]
-3
-
-> length []
-0
-
-> length [1..10]
-10
-
-> length [1..]
-* nunca termina *
-
-> take 10 [1..]
-[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
--}
-
-{-
-length :: [a] -> Number
-length [] = 0
-length (_ : xs) = 1 + length xs
--}
-
-length' :: [a] -> Number
-length' lista
-    | null lista = 0
-    | otherwise = 1 + (length' . tail) lista
-
